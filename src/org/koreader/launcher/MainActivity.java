@@ -23,7 +23,7 @@ import java.util.concurrent.CountDownLatch;
 
 public class MainActivity extends NativeActivity {
 
-    private final static boolean FULLSCREEN_SETTING_KEY = "fullscreen";
+    private final static String FULLSCREEN_SETTING_KEY = "fullscreen";
 
     private class Box<T> {
         public T value;
@@ -274,13 +274,14 @@ public class MainActivity extends NativeActivity {
 	}
 
   private void saveFulscreenSetting() {
-    SharedPreferences preferences = getActivity().getPreferences(Context.MODE_PRIVATE);
-    preferences.edit().putBoolean(FULLSCREEN_SETTING_KEY, isFullscreen());
+    SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
+    SharedPreferences.Editor editor = preferences.edit();
+    editor.putBoolean(FULLSCREEN_SETTING_KEY, isFullscreen() == 1);
     editor.commit();
   }
 
   private void restoreFullscreenSettings() {
-    SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+    SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
     boolean fullscreen = sharedPref.getBoolean(FULLSCREEN_SETTING_KEY, true);
     setFullscreen(fullscreen);
   }
