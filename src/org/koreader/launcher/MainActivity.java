@@ -7,6 +7,7 @@ import android.os.BatteryManager;
 import android.content.IntentFilter;
 import android.content.Intent;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.util.Log;
@@ -20,6 +21,9 @@ import android.net.wifi.WifiManager;
 import java.util.concurrent.CountDownLatch;
 
 public class MainActivity extends NativeActivity {
+
+    private final static boolean FULLSCREEN_SETTING_KEY = "fullscreen";
+
     private class Box<T> {
         public T value;
     }
@@ -39,7 +43,15 @@ public class MainActivity extends NativeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        restoreFullscreenSettings();
     }
+
+    @Override
+     protected void onStop(){
+        super.onStop();
+        saveFulscreenSetting();
+   }
+
 
     private void setFullscreenLayout() {
         int SDK_INT = android.os.Build.VERSION.SDK_INT;
@@ -164,7 +176,7 @@ public class MainActivity extends NativeActivity {
     }
 
     private WifiManager getWifiManager() {
-        return (WifiManager) this.getSystemService(Context.WIFI_SERVICE); 
+        return (WifiManager) this.getSystemService(Context.WIFI_SERVICE);
     }
 
     public void setFullscreen(final boolean fullscreen) {
@@ -219,7 +231,7 @@ public class MainActivity extends NativeActivity {
         return size;
 	}
 
-	public int getScreenWidth() {
+  public int getScreenWidth() {
         int width = getSceenSize().x;
         return width;
 	}
@@ -228,4 +240,16 @@ public class MainActivity extends NativeActivity {
         int height = getSceenSize().y;
         return height;
 	}
+
+  private void saveFulscreenSetting() {
+    SharedPreferences preferences = getActivity().getPreferences(Context.MODE_PRIVATE);
+    preferences.edit().putBoolean(FULLSCREEN_SETTING_KEY, isFullscreen());
+    editor.commit();
+  }
+
+  private void restoreFullscreenSettings() {
+    SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+    boolean fullscreen = sharedPref.getBoolean(FULLSCREEN_SETTING_KEY, true);
+    setFullscreen(fullscreen);
+  }
 }
