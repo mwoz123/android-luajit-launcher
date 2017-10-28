@@ -14,12 +14,12 @@ for i = 1, 32 do
 end
 -- free the reservation immediately
 for _, slot in ipairs(reserved_slots) do
-  local res = ffi.C.munmap(slot.p, slot.len)
+  ffi.C.munmap(slot.p, slot.len)
 end
 -- and allocate a large mcode segment, hopefully it will succeed.
 -- 64KB ought to be enough for everyone with 10000 loop threshold
 require("jit.opt").start("sizemcode=64","maxmcode=64", "hotloop=10000")
-for i=1,20000 do end  -- Force allocation of one large segment
+for _=1,20000 do end  -- Force allocation of one large segment
 
 ffi.cdef[[
 // logging:
@@ -1047,7 +1047,7 @@ function JNI:callBooleanMethod(object, method, signature, ...)
     local clazz = self.env[0].GetObjectClass(self.env, object)
     local methodID = self.env[0].GetMethodID(self.env, clazz, method, signature)
     self.env[0].DeleteLocalRef(self.env, clazz)
-    return self.env[0].callBooleanMethod(self.env, object, methodID, ...)
+    return self.env[0].CallBooleanMethod(self.env, object, methodID, ...)
 end
 
 function JNI:callStaticBooleanMethod(class, method, signature, ...)
@@ -1363,10 +1363,10 @@ local function run(android_app_state)
             local fullscreen = JNI:callIntMethod(
                 android.app.activity.clazz,
                 "isFullscreen",
-                "()Z"
+                "()I"
             )
             android.LOGI("is fullscreen =", fullscreen)
-            return fullscreen
+            return fullscreen == 1
         end)
     end
     android.setFullscreen = function(fullscreen)
@@ -1381,15 +1381,27 @@ local function run(android_app_state)
         end)
     end
 
+    android.setKeepScreenOn = function(keepOn)
+        android.LOGI("setting KeepScreenOn to ", keepOn)
+        JNI:context(android.app.activity.vm, function(JNI)
+            JNI:callVoidMethod(
+                android.app.activity.clazz,
+                "setKeepScreenOn",
+                "(Z)V",
+                ffi.new('bool', keepOn)
+            )
+        end)
+    end
+
     android.isWifiEnabled = function()
         return JNI:context(android.app.activity.vm, function(JNI)
             local isWifiEnabled = JNI:callIntMethod(
                 android.app.activity.clazz,
                 "isWifiEnabled",
-                "()Z"
+                "()I"
             )
             android.LOGI("is WifiEnabled =", isWifiEnabled)
-            return isWifiEnabled
+            return isWifiEnabled == 1
         end)
     end
 
@@ -1509,7 +1521,7 @@ local function run(android_app_state)
             return out
         end)
     end
-    os.execute = function(command)
+    os.execute = function(command) -- luacheck: ignore 122
         if command == nil then return -1 end
         local argv = {}
         command:gsub("([^ ]+)", function(arg) table.insert(argv, arg) end)
@@ -1541,7 +1553,7 @@ local function run(android_app_state)
 
     -- ffi.load wrapper
     local ffi_load = ffi.load
-    ffi.load = function(library, ...)
+    ffi.load = function(library, ...) -- luacheck: ignore 212
         android.LOGI("ffi.load "..library)
         return android.dl.dlopen(library, ffi_load)
     end

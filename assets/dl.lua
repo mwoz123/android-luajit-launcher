@@ -14,6 +14,7 @@ and as such:
 --]]
 
 local ffi = require("ffi")
+local A = require("android")
 local Elf = require("elf")
 
 ffi.cdef[[
@@ -31,6 +32,7 @@ local dl = {
 }
 
 local function sys_dlopen(library)
+    A.LOGI(string.format("dl.lua - sys_dlopen - loading library %s", library))
     local p = ffi.C.dlopen(library, ffi.C.RTLD_LOCAL)
     if p == nil then
         local err_msg = ffi.C.dlerror()
@@ -71,6 +73,7 @@ function dl.dlopen(library, load_func)
             ok, lib = pcall(Elf.open, lname)
         end
         if ok then
+            A.LOGI(string.format("dl.lua - dl.dlopen - library lname detected %s", lname))
             -- we found a library, now load its requirements
             -- we do _not_ pass the load_func to the cascaded
             -- calls, so those will always use sys_dlopen()
@@ -78,10 +81,13 @@ function dl.dlopen(library, load_func)
                 if needed == "libluajit.so" then
                     -- load the luajit-launcher libluajit with sys_dlopen
                     load_func("libluajit.so")
-                elseif needed ~= "libdl.so" then
-                    -- for android >= 6.0, you can't load system library anymore
-                    -- and since we also have our own dl implementation, it's safe
-                    -- to skip the stock libdl.
+                elseif needed ~= "libdl.so" and pspec ~= "/system/lib" then
+                    -- For Android >= 6.0, you the list of safe system libraries is:
+                    -- libandroid, libc, libcamera2ndk, libdl, libGLES, libjnigraphics,
+                    -- liblog, libm, libmediandk, libOpenMAXAL, libOpenSLES, libstdc++,
+                    -- libvulkan, and libz
+                    -- However, we have our own dl implementation and don't need the rest.
+                    A.LOGI(string.format("         dl.dlopen - opening needed %s for %s", needed, lname))
                     dl.dlopen(needed)
                 end
             end
