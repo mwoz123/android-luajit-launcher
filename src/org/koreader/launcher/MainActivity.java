@@ -50,7 +50,7 @@ public class MainActivity extends NativeActivity {
     @Override
      protected void onStop(){
         super.onStop();
-        saveFulscreenSetting();
+        saveFullscreenSetting();
    }
 
 
@@ -217,10 +217,10 @@ public class MainActivity extends NativeActivity {
             @Override
             public void run() {
                 try {
-                    WindowManager.LayoutParams attrs = getWindow().getAttributes();
                     if (fullscreen){
-                        attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+                        setFullscreenLayout();
                     } else {
+                        WindowManager.LayoutParams attrs = getWindow().getAttributes();
                         attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
                     }
                     getWindow().setAttributes(attrs);
@@ -273,10 +273,10 @@ public class MainActivity extends NativeActivity {
         return height;
 	}
 
-  private void saveFulscreenSetting() {
+  private void saveFullscreenSetting() {
     SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
     SharedPreferences.Editor editor = preferences.edit();
-    editor.putBoolean(FULLSCREEN_SETTING_KEY, isFullscreen() == 1);
+    editor.putBoolean(FULLSCREEN_SETTING_KEY, isFullscreen() != 0);
     editor.commit();
   }
 
