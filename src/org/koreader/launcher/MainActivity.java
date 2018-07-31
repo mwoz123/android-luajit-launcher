@@ -7,6 +7,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.net.wifi.WifiManager;
@@ -27,6 +28,7 @@ public class MainActivity extends NativeActivity {
 
     private final static int SDK_INT = android.os.Build.VERSION.SDK_INT;
     private final static String LOGGER_NAME = "luajit-launcher";
+    private final static String FULLSCREEN_SETTING_KEY = "fullscreen";
 
     static {
         System.loadLibrary("luajit");
@@ -47,17 +49,20 @@ public class MainActivity extends NativeActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // set fullscreen immediately on general principle
-        setFullscreenLayout();
 
-        // set fullscreen delayed because presumably some devices don't work right otherwise
-        final Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                setFullscreenLayout();
-            }
-        }, 500);
+        if (isFullscreenSetting()) {
+            // set fullscreen immediately on general principle
+            setFullscreenLayout();
+
+            // set fullscreen delayed because presumably some devices don't work right otherwise
+            final Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    setFullscreenLayout();
+                }
+            }, 500);
+        }
     }
 
     private void setFullscreenLayout() {
@@ -222,6 +227,7 @@ public class MainActivity extends NativeActivity {
                         attrs.flags &= ~WindowManager.LayoutParams.FLAG_FULLSCREEN;
                     }
                     getWindow().setAttributes(attrs);
+                    saveFullscreenSetting(fullscreen);
                 } catch (Exception e) {
                     Log.v(LOGGER_NAME, e.toString());
                 }
@@ -364,6 +370,17 @@ public class MainActivity extends NativeActivity {
             Log.v(LOGGER_NAME, e.toString());
         }
         return size;
+    }
+    private boolean isFullscreenSetting() {
+        SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+        return sharedPref.getBoolean(FULLSCREEN_SETTING_KEY, true);
+    }
+
+    private void saveFullscreenSetting(boolean fullscreen) {
+        SharedPreferences preferences = getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean(FULLSCREEN_SETTING_KEY, fullscreen);
+        editor.commit();
     }
 
     private class Box<T> {
